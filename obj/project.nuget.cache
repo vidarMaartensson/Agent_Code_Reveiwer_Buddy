@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "dgSpecHash": "C545UNvPnjg=",
+  "success": true,
+  "projectFilePath": "/Users/vidarmartensson/Desktop/projects/AgentCodeReviewerBuddy/AgentCodeReviewerBuddy.csproj",
+  "expectedPackageFiles": [
+    "/Users/vidarmartensson/.nuget/packages/google.protobuf/3.30.2/google.protobuf.3.30.2.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/libgit2sharp/0.31.0/libgit2sharp.0.31.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/libgit2sharp.nativebinaries/2.0.323/libgit2sharp.nativebinaries.2.0.323.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.agents.ai/1.9.0/microsoft.agents.ai.1.9.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.agents.ai.abstractions/1.9.0/microsoft.agents.ai.abstractions.1.9.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.aspnetcore.openapi/10.0.8/microsoft.aspnetcore.openapi.10.0.8.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.ai/10.5.1/microsoft.extensions.ai.10.5.1.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.ai.abstractions/10.5.1/microsoft.extensions.ai.abstractions.10.5.1.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.ai.evaluation/10.4.0/microsoft.extensions.ai.evaluation.10.4.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.ai.ollama/9.7.0-preview.1.25356.2/microsoft.extensions.ai.ollama.9.7.0-preview.1.25356.2.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.compliance.abstractions/10.5.0/microsoft.extensions.compliance.abstractions.10.5.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.extensions.vectordata.abstractions/9.7.0/microsoft.extensions.vectordata.abstractions.9.7.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.ml.tokenizers/2.0.0/microsoft.ml.tokenizers.2.0.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512",
+    "/Users/vidarmartensson/.nuget/packages/system.numerics.tensors/10.0.6/system.numerics.tensors.10.0.6.nupkg.sha512"
+  ],
+  "logs": []
+}
