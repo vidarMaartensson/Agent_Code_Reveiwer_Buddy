@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace AgenticService.Infrastructure;
 
@@ -6,17 +8,20 @@ public interface ILocalLlmClient
 {
     Task<List<string>> FilterRelevantFilesAsync(List<string> allFiles);
     Task<string> GetCompletionAsync(string prompt);
+    IAsyncEnumerable<string> StreamCompletionAsync(string prompt, CancellationToken cancellationToken = default);
 }
 
 public class OllamaLlmClient : ILocalLlmClient
 {
     private readonly HttpClient _httpClient;
     private readonly string _model;
+    private readonly string _baseUrl;
 
     public OllamaLlmClient(HttpClient httpClient, IConfiguration config)
     {
         _httpClient = httpClient;
         _model = config["LlmSettings:ModelName"] ?? "llama3";
+        _baseUrl = config["LlmSettings:BaseUrl"] ?? "http://localhost:11434";
     }
 
     public async Task<List<string>> FilterRelevantFilesAsync(List<string> allFiles)
@@ -28,16 +33,17 @@ public class OllamaLlmClient : ILocalLlmClient
                 Identify the files most likely to contain core business logic, API definitions, or complex algorithms.
                 Exclude boilerplate, simple configuration, and trivial assets.
                 Return ONLY a comma-separated list of the relevant file paths.
-
+            
                 FILES:
                 {string.Join("\n", allFiles)}
                 """;
 
             var request = new { model = _model, prompt = prompt, stream = false };
             
-            // Use a specific cancellation token for LLM calls to prevent infinite hangs
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", request, cts.Token);
+            var url = $"{_baseUrl.TrimEnd('/')}/api/generate";
+            
+            var response = await _httpClient.PostAsJsonAsync(url, request, cts.Token);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<OllamaResponse>(cancellationToken: cts.Token);
@@ -61,14 +67,44 @@ public class OllamaLlmClient : ILocalLlmClient
 
     public async Task<string> GetCompletionAsync(string prompt)
     {
-        var request = new { model = _model, prompt = prompt, stream = false };
+        // Use the streaming method and aggregate results for non-streaming completion
+        var sb = new System.Text.StringBuilder();
+        await foreach (var chunk in StreamCompletionAsync(prompt))
+        {
+            sb.Append(chunk);
+        }
+        return sb.ToString();
+    }
+
+    public async IAsyncEnumerable<string> StreamCompletionAsync(string prompt, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var request = new { model = _model, prompt = prompt, stream = true };
+        var url = $"{_baseUrl.TrimEnd('/')}/api/generate";
         
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-        var response = await _httpClient.PostAsJsonAsync("http://localhost:11434/api/generate", request, cts.Token);
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url);
+        requestMessage.Content = JsonContent.Create(request);
+        
+        var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<OllamaResponse>(cancellationToken: cts.Token);
-        return result?.Response ?? string.Empty;
+        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(responseStream);
+
+        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            try
+            {
+                var ollamaResponse = JsonSerializer.Deserialize<OllamaResponse>(line);
+                if (!string.IsNullOrEmpty(ollamaResponse?.Response))
+                {
+                    yield return ollamaResponse.Response;
+                }
+            }
+            catch (JsonException) { /* Log or handle malformed JSON if necessary */ }
+        }
     }
 
     private record OllamaResponse(string Response);

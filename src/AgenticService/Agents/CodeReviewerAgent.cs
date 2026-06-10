@@ -1,4 +1,5 @@
 using AgenticService.Infrastructure;
+using System.Runtime.CompilerServices;
 using AgenticService.Tools;
 
 namespace AgenticService.Agents;
@@ -11,10 +12,13 @@ public class CodeReviewerAgent(ILocalLlmClient llmClient, GuidelineTool guidelin
     private readonly ILocalLlmClient _llmClient = llmClient;
     private readonly GuidelineTool _guidelineTool = guidelineTool;
 
-    public async Task<string> ReviewCodeAsync(string sourceCode)
+    public async IAsyncEnumerable<string> ReviewCodeAsync(string sourceCode, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(sourceCode))
-            return "No code provided for review.";
+        {
+            yield return "No code provided for review.";
+            yield break;
+        }
 
         var guidelines = _guidelineTool.GetReviewGuidelines();
 
@@ -29,7 +33,10 @@ public class CodeReviewerAgent(ILocalLlmClient llmClient, GuidelineTool guidelin
             CODE:
             {sourceCode}
             """;
-
-        return await _llmClient.GetCompletionAsync(prompt);
+        
+        await foreach (var chunk in _llmClient.StreamCompletionAsync(prompt, cancellationToken))
+        {
+            yield return chunk;
+        }
     }
 }
