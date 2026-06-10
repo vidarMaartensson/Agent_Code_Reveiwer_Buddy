@@ -1,11 +1,19 @@
 using System.ComponentModel;
 using System.Text;
 using LibGit2Sharp;
+using Microsoft.Extensions.Logging;
 
 namespace AgenticService.Tools;
 
 public class GitHubTools
 {
+    private readonly ILogger<GitHubTools> _logger;
+
+    public GitHubTools(ILogger<GitHubTools> logger)
+    {
+        _logger = logger;
+    }
+
     public string CloneRepo(string repoUrl)
     {
         string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -16,9 +24,10 @@ public class GitHubTools
     public List<string> GetFileList(string localPath)
     {
         return Directory.GetFiles(localPath, "*.*", SearchOption.AllDirectories)
-                        .Where(f => !f.Contains(".git") && 
-                                    !f.Contains("\\bin\\") && 
-                                    !f.Contains("\\obj\\") &&
+                        .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}") && 
+                                    !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}") && 
+                                    !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") &&
+                                    !f.Contains($"{Path.DirectorySeparatorChar}node_modules{Path.DirectorySeparatorChar}") &&
                                     IsSourceCodeFile(f))
                         .Select(f => Path.GetRelativePath(localPath, f))
                         .ToList();
@@ -62,8 +71,12 @@ public class GitHubTools
 
         foreach (string file in files)
         {
-            File.SetAttributes(file, FileAttributes.Normal);
-            File.Delete(file);
+            try {
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+            } catch (Exception ex) { 
+                _logger.LogWarning(ex, "Failed to delete file {File} during cleanup. Attempting to continue.", file);
+            }
         }
 
         foreach (string dir in dirs)

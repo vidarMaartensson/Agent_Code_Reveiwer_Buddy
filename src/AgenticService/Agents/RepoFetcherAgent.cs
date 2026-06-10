@@ -12,13 +12,16 @@ public class RepoFetcherAgent
     private readonly GitHubTools _githubTools;
     private readonly ILocalLlmClient _llmClient;
 
+    // Conservative character limit for local LLMs (roughly ~15k-20k tokens)
+    private const int MaxCharacterLimit = 60000;
+
     public RepoFetcherAgent(GitHubTools githubTools, ILocalLlmClient llmClient)
     {
         _githubTools = githubTools;
         _llmClient = llmClient;
     }
 
-    public async Task<string> ExecuteAsync(string repoUrl)
+    public async Task<FetchedCodeDetails> ExecuteAsync(string repoUrl)
     {
         string tempPath = "";
         try
@@ -31,7 +34,17 @@ public class RepoFetcherAgent
             
             var codeContent = _githubTools.ReadFiles(tempPath, importantFiles);
             
-            return codeContent;
+            var fetchedDetails = new FetchedCodeDetails
+            {
+                ScannedFiles = importantFiles
+            };
+
+            if (codeContent.Length > MaxCharacterLimit)
+            {
+                fetchedDetails.CodeContent = codeContent[..MaxCharacterLimit] + "\n\n[Content Truncated due to context window limits...]";
+            }
+            else fetchedDetails.CodeContent = codeContent;
+            return fetchedDetails;
         }
         finally
         {

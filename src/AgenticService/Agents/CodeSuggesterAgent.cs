@@ -1,4 +1,5 @@
 using AgenticService.Infrastructure;
+using System.Runtime.CompilerServices;
 
 namespace AgenticService.Agents;
 
@@ -14,7 +15,7 @@ public class CodeSuggesterAgent
         _llmClient = llmClient;
     }
 
-    public async Task<string> SuggestImprovementsAsync(string sourceCode, string reviewFindings)
+    public async IAsyncEnumerable<string> SuggestImprovementsAsync(string sourceCode, string reviewFindings, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var prompt = $"""
             Based on the following code review findings, provide specific code snippets and refactoring suggestions.
@@ -26,7 +27,10 @@ public class CodeSuggesterAgent
             ORIGINAL CODE:
             {sourceCode}
             """;
-
-        return await _llmClient.GetCompletionAsync(prompt);
+        
+        await foreach (var chunk in _llmClient.StreamCompletionAsync(prompt, cancellationToken))
+        {
+            yield return chunk;
+        }
     }
 }
