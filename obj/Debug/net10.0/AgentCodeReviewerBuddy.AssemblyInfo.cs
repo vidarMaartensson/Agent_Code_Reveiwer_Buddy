@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AgentCodeReviewerBuddy")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+855596c8991d1b0d51be2a3ab10bac547283d994")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+52549dc50c2e216de256e07ebf37d804dee5100e")]
 [assembly: System.Reflection.AssemblyProductAttribute("AgentCodeReviewerBuddy")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AgentCodeReviewerBuddy")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
