@@ -1,0 +1,6 @@
+@AgentCodeReviewerBuddy_HostAddress = http://localhost:5199
+
+GET {{AgentCodeReviewerBuddy_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
