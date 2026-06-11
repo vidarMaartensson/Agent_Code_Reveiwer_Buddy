@@ -7,6 +7,7 @@ using AgenticService.Tools;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddCors();
 
 //Tools and agents
 builder.Services.AddTransient<GitHubTools>();
@@ -26,6 +27,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
 app.MapGet("/", () => Results.Text("AgentCodeReviewerBuddy API"));
 

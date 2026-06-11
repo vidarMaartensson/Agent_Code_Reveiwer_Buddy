@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AgenticService.Infrastructure;
 
@@ -90,22 +91,33 @@ public class OllamaLlmClient : ILocalLlmClient
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(responseStream);
 
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        while (true)
         {
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+
             var line = await reader.ReadLineAsync(cancellationToken);
+            if (line == null) // end of stream
+                break;
+
             if (string.IsNullOrWhiteSpace(line)) continue;
 
+            OllamaResponse? ollamaResponse = null;
             try
             {
-                var ollamaResponse = JsonSerializer.Deserialize<OllamaResponse>(line);
-                if (!string.IsNullOrEmpty(ollamaResponse?.Response))
-                {
-                    yield return ollamaResponse.Response;
-                }
+                ollamaResponse = JsonSerializer.Deserialize<OllamaResponse>(line, new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                });
             }
             catch (JsonException) { /* Log or handle malformed JSON if necessary */ }
+
+            if (ollamaResponse != null && !string.IsNullOrEmpty(ollamaResponse.Response))
+            {
+                yield return ollamaResponse.Response;
+            }
         }
     }
 
-    private record OllamaResponse(string Response);
+    private record OllamaResponse([property: JsonPropertyName("response")] string Response);
 }
