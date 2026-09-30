@@ -12,7 +12,10 @@ builder.Services.AddCors();
 //Tools and agents
 builder.Services.AddTransient<GitHubTools>();
 builder.Services.AddSingleton<GuidelineTool>();
-builder.Services.AddHttpClient<ILocalLlmClient, OllamaLlmClient>();
+if (builder.Configuration["LlmSettings:Provider"]?.Equals("Ollama", StringComparison.OrdinalIgnoreCase) == true)
+    builder.Services.AddHttpClient<ILocalLlmClient, OllamaLlmClient>();
+else
+    builder.Services.AddHttpClient<ILocalLlmClient, GroqLlmClient>();
 builder.Services.AddTransient<RepoFetcherAgent>();
 builder.Services.AddTransient<CodeSuggesterAgent>();
 builder.Services.AddTransient<CodeReviewerAgent>();
@@ -28,10 +31,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+// Comma-separated list, e.g. Cors__AllowedOrigins=https://your-app.vercel.app. Unset = allow any (local dev).
+var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+app.UseCors(policy =>
+{
+    if (allowedOrigins is { Length: > 0 }) policy.WithOrigins(allowedOrigins);
+    else policy.AllowAnyOrigin();
+    policy.AllowAnyMethod().AllowAnyHeader();
+});
 
 app.MapGet("/", () => Results.Text("AgentCodeReviewerBuddy API"));
 

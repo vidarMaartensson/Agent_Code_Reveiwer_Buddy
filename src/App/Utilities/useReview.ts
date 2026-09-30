@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { BACKEND_BASE_URL } from "./backend";
 
 interface ReviewChunk {
   metadata?: {
@@ -43,9 +44,6 @@ export const useReview = (): UseReviewResult => {
       setSuggestions("");
       setIsModalOpen(false);
       setStatus("Initializing review...");
-
-      // Updated to match your local backend port
-      const BACKEND_BASE_URL = "http://localhost:5199";
 
       try {
         console.log(`Attempting fetch to: ${BACKEND_BASE_URL}/review`);
