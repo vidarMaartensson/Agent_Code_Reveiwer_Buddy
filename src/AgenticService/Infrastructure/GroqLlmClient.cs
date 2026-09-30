@@ -11,13 +11,16 @@ public class GroqLlmClient : ILocalLlmClient
     private readonly HttpClient _httpClient;
     private readonly string _model;
     private readonly string _baseUrl;
+    private readonly string? _reasoningEffort;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public GroqLlmClient(HttpClient httpClient, IConfiguration config)
     {
         _httpClient = httpClient;
-        _model = config["Groq:ModelName"] ?? "llama-3.3-70b-versatile";
+        _model = config["Groq:ModelName"] ?? "openai/gpt-oss-120b";
+        // Only for reasoning models (e.g. gpt-oss): "low" keeps latency and token usage down
+        _reasoningEffort = config["Groq:ReasoningEffort"];
         _baseUrl = config["Groq:BaseUrl"] ?? "https://api.groq.com/openai/v1";
 
         var apiKey = config["Groq:ApiKey"] ?? config["GROQ_API_KEY"];
@@ -143,12 +146,18 @@ public class GroqLlmClient : ILocalLlmClient
 
     private string CompletionsUrl => $"{_baseUrl.TrimEnd('/')}/chat/completions";
 
-    private object BuildRequest(string prompt, bool stream) => new
+    private Dictionary<string, object> BuildRequest(string prompt, bool stream)
     {
-        model = _model,
-        messages = new[] { new { role = "user", content = prompt } },
-        stream
-    };
+        var request = new Dictionary<string, object>
+        {
+            ["model"] = _model,
+            ["messages"] = new[] { new { role = "user", content = prompt } },
+            ["stream"] = stream
+        };
+        if (!string.IsNullOrWhiteSpace(_reasoningEffort))
+            request["reasoning_effort"] = _reasoningEffort;
+        return request;
+    }
 
     private record ChatCompletionResponse([property: JsonPropertyName("choices")] List<Choice> Choices);
     private record Choice(
