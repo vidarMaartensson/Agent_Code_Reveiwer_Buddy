@@ -6,6 +6,7 @@ interface SearchFormProps {
   setUrl: (url: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   loading: boolean;
+  disabled?: boolean;
 }
 
 export const SearchForm: React.FC<SearchFormProps> = ({
@@ -13,6 +14,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
   setUrl,
   onSubmit,
   loading,
+  disabled = false,
 }) => {
   return (
     <form
@@ -32,7 +34,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           className="w-full p-4 bg-transparent outline-none text-slate-100 placeholder:text-slate-600"
         />
         <button
-          disabled={loading}
+          disabled={loading || disabled}
           className="px-8 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 transition-colors font-semibold h-[56px] min-w-[120px] flex items-center justify-center"
         >
           {loading ? <Loader2 className="animate-spin" /> : "Review"}

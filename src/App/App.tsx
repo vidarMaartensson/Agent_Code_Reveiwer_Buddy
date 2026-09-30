@@ -2,13 +2,15 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
-import { SearchForm } from "./components/SearchForm";
-import { StatusBanner } from "./components/StatusBanner";
-import { ReviewReport } from "./components/ReviewReport";
-import { BackgroundStars } from "./components/BackgroundStars";
-import { SuggestionsModal } from "./components/SuggestionsModal";
-import { FileChips } from "./components/FileChips"; // Keep this import
-import { useReview } from "./utilities/useReview";
+import { SearchForm } from "./Components/SearchForm";
+import { StatusBanner } from "./Components/StatusBanner";
+import { ReviewReport } from "./Components/ReviewReport";
+import { BackgroundStars } from "./Components/BackgroundStars";
+import { SuggestionsModal } from "./Components/SuggestionsModal";
+import { FileChips } from "./Components/FileChips"; // Keep this import
+import { BackendStatusBubble } from "./Components/BackendStatusBubble";
+import { useReview } from "./Utilities/useReview";
+import { useBackendStatus } from "./Utilities/useBackendStatus";
 
 function App() {
   const {
@@ -23,6 +25,7 @@ function App() {
     setIsModalOpen,
     handleSubmit,
   } = useReview();
+  const backendStatus = useBackendStatus();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
@@ -45,6 +48,7 @@ function App() {
           setUrl={setUrl}
           onSubmit={handleSubmit}
           loading={loading}
+          disabled={backendStatus !== "ready"}
         />
 
         {/* Results Area */}
@@ -84,6 +88,8 @@ function App() {
           )}
         </AnimatePresence>
       </motion.div>
+
+      <BackendStatusBubble status={backendStatus} />
 
       <SuggestionsModal
         isOpen={isModalOpen}
