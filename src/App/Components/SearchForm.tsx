@@ -30,14 +30,19 @@ export const SearchForm: React.FC<SearchFormProps> = ({
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter GitHub Repository URL (e.g., https://github.com/user/repo)"
-          className="w-full p-4 bg-transparent outline-none text-slate-100 placeholder:text-slate-600"
+          disabled={disabled}
+          placeholder={
+            disabled
+              ? "Waking up the backend, hang tight..."
+              : "Enter GitHub Repository URL (e.g., https://github.com/user/repo)"
+          }
+          className="w-full p-4 bg-transparent outline-none text-slate-100 placeholder:text-slate-600 disabled:cursor-not-allowed"
         />
         <button
           disabled={loading || disabled}
           className="px-8 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 transition-colors font-semibold h-[56px] min-w-[120px] flex items-center justify-center"
         >
-          {loading ? <Loader2 className="animate-spin" /> : "Review"}
+          {loading || disabled ? <Loader2 className="animate-spin" /> : "Review"}
         </button>
       </div>
     </form>

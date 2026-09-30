@@ -12,13 +12,15 @@ public class RepoFetcherAgent
     private readonly GitHubTools _githubTools;
     private readonly ILocalLlmClient _llmClient;
 
-    // Conservative character limit for local LLMs (roughly ~15k-20k tokens)
-    private const int MaxCharacterLimit = 60000;
+    // ~4 characters per token. Keep this well below the provider's tokens-per-minute limit,
+    // since the reviewer and suggester each send the code once.
+    private readonly int _maxCharacterLimit;
 
-    public RepoFetcherAgent(GitHubTools githubTools, ILocalLlmClient llmClient)
+    public RepoFetcherAgent(GitHubTools githubTools, ILocalLlmClient llmClient, IConfiguration config)
     {
         _githubTools = githubTools;
         _llmClient = llmClient;
+        _maxCharacterLimit = config.GetValue("LlmSettings:MaxCodeCharacters", 60000);
     }
 
     public async Task<FetchedCodeDetails> ExecuteAsync(string repoUrl)
@@ -39,9 +41,9 @@ public class RepoFetcherAgent
                 ScannedFiles = importantFiles
             };
 
-            if (codeContent.Length > MaxCharacterLimit)
+            if (codeContent.Length > _maxCharacterLimit)
             {
-                fetchedDetails.CodeContent = codeContent[..MaxCharacterLimit] + "\n\n[Content Truncated due to context window limits...]";
+                fetchedDetails.CodeContent = codeContent[.._maxCharacterLimit] + "\n\n[Content Truncated due to context window limits...]";
             }
             else fetchedDetails.CodeContent = codeContent;
             return fetchedDetails;
