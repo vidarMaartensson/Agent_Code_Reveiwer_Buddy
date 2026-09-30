@@ -103,6 +103,10 @@ export const useReview = (): UseReviewResult => {
                       setSuggestions((p) => p + data.reportChunk);
                     }
                     if (data.metadata?.status) setStatus(data.metadata.status);
+                    if (data.metadata?.errorMessage)
+                      setReport(
+                        (p) => p + `\n\nError: ${data.metadata!.errorMessage}`,
+                      );
                     if (data.metadata?.scannedFiles)
                       setScannedFiles(data.metadata.scannedFiles);
                   } catch (e) {

@@ -79,11 +79,7 @@ public class GroqLlmClient : ILocalLlmClient
 
     public async IAsyncEnumerable<string> StreamCompletionAsync(string prompt, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, CompletionsUrl);
-        requestMessage.Content = JsonContent.Create(BuildRequest(prompt, stream: true));
-
-        using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        using var response = await SendWithRetryAsync(prompt, cancellationToken);
 
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(responseStream);
@@ -114,6 +110,36 @@ public class GroqLlmClient : ILocalLlmClient
             }
         }
     }
+
+    private async Task<HttpResponseMessage> SendWithRetryAsync(string prompt, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, CompletionsUrl);
+            requestMessage.Content = JsonContent.Create(BuildRequest(prompt, stream: true));
+
+            var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (response.IsSuccessStatusCode) return response;
+
+            // Rate limited (free tier tokens-per-minute): wait as long as Groq asks, then retry
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt <= MaxRetries)
+            {
+                var delay = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10 * attempt);
+                response.Dispose();
+                await Task.Delay(delay > MaxRetryDelay ? MaxRetryDelay : delay, cancellationToken);
+                continue;
+            }
+
+            // Surface Groq's own error message (e.g. "Request too large ... tokens per minute")
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            var status = (int)response.StatusCode;
+            response.Dispose();
+            throw new HttpRequestException($"Groq returned {status}: {body}");
+        }
+    }
+
+    private const int MaxRetries = 3;
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(60);
 
     private string CompletionsUrl => $"{_baseUrl.TrimEnd('/')}/chat/completions";
 
