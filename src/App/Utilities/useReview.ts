@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { BACKEND_BASE_URL } from "./backend";
+import { extractJsonObjects } from "./jsonStream";
 
 interface ReviewChunk {
   metadata?: {
@@ -67,54 +68,25 @@ export const useReview = (): UseReviewResult => {
 
             buffer += decoder.decode(value, { stream: true });
 
-            let updated = true;
-            while (updated) {
-              updated = false;
-              buffer = buffer.trim();
+            const { objects, rest } = extractJsonObjects(buffer);
+            buffer = rest;
 
-              // Handle leading array brackets or commas from the JSON stream
-              if (buffer.startsWith("[") || buffer.startsWith(",")) {
-                buffer = buffer.substring(1).trim();
-                updated = true;
-                continue;
-              }
-
-              if (buffer.startsWith("{")) {
-                let depth = 0;
-                let end = -1;
-                for (let i = 0; i < buffer.length; i++) {
-                  if (buffer[i] === "{") depth++;
-                  else if (buffer[i] === "}") {
-                    depth--;
-                    if (depth === 0) {
-                      end = i;
-                      break;
-                    }
-                  }
+            for (const jsonStr of objects) {
+              try {
+                const data: ReviewChunk = JSON.parse(jsonStr);
+                if (data.reportChunk) setReport((p) => p + data.reportChunk);
+                if (data.section === "Suggestions" && data.reportChunk) {
+                  setSuggestions((p) => p + data.reportChunk);
                 }
-
-                if (end !== -1) {
-                  const jsonStr = buffer.substring(0, end + 1);
-                  try {
-                    const data: ReviewChunk = JSON.parse(jsonStr);
-                    if (data.reportChunk)
-                      setReport((p) => p + data.reportChunk);
-                    if (data.section === "Suggestions" && data.reportChunk) {
-                      setSuggestions((p) => p + data.reportChunk);
-                    }
-                    if (data.metadata?.status) setStatus(data.metadata.status);
-                    if (data.metadata?.errorMessage)
-                      setReport(
-                        (p) => p + `\n\nError: ${data.metadata!.errorMessage}`,
-                      );
-                    if (data.metadata?.scannedFiles)
-                      setScannedFiles(data.metadata.scannedFiles);
-                  } catch (e) {
-                    console.error("Chunk parse error", e);
-                  }
-                  buffer = buffer.substring(end + 1).trim();
-                  updated = true;
-                }
+                if (data.metadata?.status) setStatus(data.metadata.status);
+                if (data.metadata?.errorMessage)
+                  setReport(
+                    (p) => p + `\n\nError: ${data.metadata!.errorMessage}`,
+                  );
+                if (data.metadata?.scannedFiles)
+                  setScannedFiles(data.metadata.scannedFiles);
+              } catch (e) {
+                console.error("Chunk parse error", e);
               }
             }
           }
