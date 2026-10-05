@@ -17,7 +17,9 @@ public class GitHubTools
     public string CloneRepo(string repoUrl)
     {
         string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        Repository.Clone(repoUrl, tempPath);
+        // Shallow clone: we only read the latest files, so skip downloading the full history
+        var options = new CloneOptions { FetchOptions = { Depth = 1 } };
+        Repository.Clone(repoUrl, tempPath, options);
         return tempPath;
     }
 

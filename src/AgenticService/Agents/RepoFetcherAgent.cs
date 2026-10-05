@@ -34,9 +34,11 @@ public class RepoFetcherAgent
             
             var allFiles = _githubTools.GetFileList(tempPath);
             
-            var importantFiles = (await _llmClient.FilterRelevantFilesAsync(allFiles))
-                .Take(_maxFiles)
-                .ToList();
+            // Only ask the LLM to pick files when there are more than we can review anyway
+            var candidates = allFiles.Count > _maxFiles
+                ? await _llmClient.FilterRelevantFilesAsync(allFiles)
+                : allFiles;
+            var importantFiles = candidates.Take(_maxFiles).ToList();
             
             var codeContent = _githubTools.ReadFiles(tempPath, importantFiles);
             
