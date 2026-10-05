@@ -40,11 +40,13 @@ public class RepoFetcherAgent
                 : allFiles;
             var importantFiles = candidates.Take(_maxFiles).ToList();
             
-            var codeContent = _githubTools.ReadFiles(tempPath, importantFiles);
+            var files = _githubTools.ReadFiles(tempPath, importantFiles);
+            var codeContent = string.Concat(files.Select(f => f.Content));
             
             var fetchedDetails = new FetchedCodeDetails
             {
-                ScannedFiles = importantFiles
+                ScannedFiles = importantFiles,
+                Files = files
             };
 
             if (codeContent.Length > _maxCharacterLimit)

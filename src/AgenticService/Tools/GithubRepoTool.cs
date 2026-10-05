@@ -35,20 +35,22 @@ public class GitHubTools
                         .ToList();
     }
 
-    public string ReadFiles(string localPath, List<string> relativePaths)
+    public List<(string Path, string Content)> ReadFiles(string localPath, List<string> relativePaths)
     {
-        var sb = new StringBuilder();
+        var files = new List<(string Path, string Content)>();
         foreach (var relPath in relativePaths)
         {
             var fullPath = Path.Combine(localPath, relPath);
             if (!File.Exists(fullPath)) continue;
 
+            var sb = new StringBuilder();
             sb.AppendLine($"--- Start of {relPath} ---");
             sb.AppendLine(File.ReadAllText(fullPath));
             sb.AppendLine($"--- End of {relPath} ---");
             sb.AppendLine();
+            files.Add((relPath, sb.ToString()));
         }
-        return sb.ToString();
+        return files;
     }
 
     public void Cleanup(string localPath)
